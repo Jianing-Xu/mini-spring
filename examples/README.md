@@ -26,9 +26,26 @@ mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.exampl
 mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.transaction.phase1.TransactionPhase1HappyPathExample
 ```
 
+## MVC 主线
+
+```bash
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase1.Phase1DispatcherExample
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase2.Phase2BindingExample
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase3.Phase3MvcExample
+```
+
 ## 事务示例输出重点
 
 - `BEGIN_COUNT=2`
 - `COMMIT_COUNT=1`
 - `ROLLBACK_COUNT=1`
 - `PHASE-TRANSACTION-1-HAPPY-PATH: PASS`
+
+## MVC 示例输出重点
+
+- Phase 1：`PHASE-MVC-1-HAPPY-PATH: PASS`
+- Phase 2：`PHASE-MVC-2-HAPPY-PATH: PASS`
+- Phase 3：`INTERCEPTOR_BODY=view:ok`
+- Phase 3：`VIEW_BODY=view:userDetail|name=alice`
+- Phase 3：`SHORT_STATUS=403`
+- Phase 3：`PHASE-MVC-3-HAPPY-PATH: PASS`

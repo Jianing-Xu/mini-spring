@@ -8,6 +8,7 @@
 - 三级缓存循环依赖解决
 - JavaConfig：`@Configuration`、`@Bean`、参数注入、重复 beanName 冲突检测、`initMethod` / `destroyMethod`
 - 事务 MVP：`@Transactional`、线程绑定事务上下文、`REQUIRED` 传播、提交与回滚
+- MVC：`DispatcherServlet`、注解路由、参数解析、返回值处理、拦截器链、异常处理链、简单视图解析
 
 ## 环境要求
 
@@ -39,6 +40,7 @@ src/main/java/com/xujn/minispring
   context/                 ApplicationContext 与注解配置入口
   core/                    通用注解/反射工具
   exception/               容器异常体系
+  minispringmvc/           MVC Dispatcher、Mapping、Adapter、Interceptor、View
   tx/                      事务注解、拦截器、事务管理器、线程上下文
 src/test/java/             单元测试与阶段验收测试
 examples/                  可运行示例
@@ -61,6 +63,12 @@ examples/                  可运行示例
 
 - Phase 1：`@Transactional`、`REQUIRED`、类级/方法级注解解析、线程绑定事务上下文、提交/回滚
 
+### MVC 主线
+
+- Phase 1：`DispatcherServlet`、`@Controller` / `@RequestMapping`、`HandlerMapping`、`HandlerAdapter`
+- Phase 2：参数解析器/返回值处理器扩展点、排序覆盖、简单类型转换
+- Phase 3：拦截器链、异常解析链、`ModelAndView`、`ViewResolver`
+
 ### 尚未实现
 
 - JavaConfig Phase 3：工厂方法 Bean 的三级缓存与 AOP 协同验收闭环
@@ -71,6 +79,9 @@ examples/                  可运行示例
 - 事务传播行为扩展：`REQUIRES_NEW`、`NESTED`
 - 回滚规则扩展：`rollbackFor` / `noRollbackFor`
 - 真实 JDBC `Connection` 集成与声明式数据源装配
+- MVC 路径变量、JSON body、复杂对象绑定、内容协商
+- MVC `@ExceptionHandler`、`MappedInterceptor`
+- MVC 异步请求处理、文件上传
 
 ## 示例运行
 
@@ -96,6 +107,14 @@ mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.exampl
 
 ```bash
 mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.transaction.phase1.TransactionPhase1HappyPathExample
+```
+
+### MVC 主线
+
+```bash
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase1.Phase1DispatcherExample
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase2.Phase2BindingExample
+mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase3.Phase3MvcExample
 ```
 
 ## 事务使用方式
@@ -166,6 +185,13 @@ public class OrderServiceImpl implements OrderService {
 - [transaction-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/docs/transaction-phase-1.md)
 - [transaction-usage.md](/Users/xjn/Develop/projects/java/mini-spring/docs/transaction-usage.md)
 
+### MVC 专项
+
+- [architecture-mvc.md](/Users/xjn/Develop/projects/java/mini-spring/docs/architecture-mvc.md)
+- [mvc-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/docs/mvc-phase-1.md)
+- [mvc-phase-2.md](/Users/xjn/Develop/projects/java/mini-spring/docs/mvc-phase-2.md)
+- [mvc-phase-3.md](/Users/xjn/Develop/projects/java/mini-spring/docs/mvc-phase-3.md)
+
 ### 验收文档
 
 - [acceptance-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-phase-1.md)
@@ -174,6 +200,9 @@ public class OrderServiceImpl implements OrderService {
 - [acceptance-javaconfig-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-javaconfig-phase-1.md)
 - [acceptance-javaconfig-phase-2.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-javaconfig-phase-2.md)
 - [acceptance-transaction-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-transaction-phase-1.md)
+- [acceptance-mvc-phase-1.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-mvc-phase-1.md)
+- [acceptance-mvc-phase-2.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-mvc-phase-2.md)
+- [acceptance-mvc-phase-3.md](/Users/xjn/Develop/projects/java/mini-spring/tests/acceptance-mvc-phase-3.md)
 
 ## 测试入口
 
@@ -185,3 +214,6 @@ public class OrderServiceImpl implements OrderService {
 - [JavaConfigPhase1AcceptanceTest.java](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispring/context/JavaConfigPhase1AcceptanceTest.java)
 - [JavaConfigPhase2AcceptanceTest.java](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispring/context/JavaConfigPhase2AcceptanceTest.java)
 - [TransactionPhase1AcceptanceTest.java](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispring/context/TransactionPhase1AcceptanceTest.java)
+- [com.xujn.minispringmvc.Phase1AcceptanceTest](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispringmvc/Phase1AcceptanceTest.java)
+- [com.xujn.minispringmvc.Phase2AcceptanceTest](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispringmvc/Phase2AcceptanceTest.java)
+- [com.xujn.minispringmvc.Phase3AcceptanceTest](/Users/xjn/Develop/projects/java/mini-spring/src/test/java/com/xujn/minispringmvc/Phase3AcceptanceTest.java)
