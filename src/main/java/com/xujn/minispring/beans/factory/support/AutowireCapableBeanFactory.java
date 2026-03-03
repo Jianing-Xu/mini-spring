@@ -83,20 +83,19 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
         Object factoryBean = getBean(beanDefinition.getFactoryBeanName());
         Method factoryMethod;
         try {
-            factoryMethod = factoryBean.getClass().getDeclaredMethod(beanDefinition.getFactoryMethodName());
+            factoryMethod = factoryBean.getClass().getDeclaredMethod(
+                    beanDefinition.getFactoryMethodName(),
+                    beanDefinition.getFactoryMethodParameterTypes()
+            );
         } catch (NoSuchMethodException ex) {
             throw new BeansException("Failed to locate @Bean factory method '" +
                     beanDefinition.getFactoryMethodName() + "' on bean '" +
                     beanDefinition.getFactoryBeanName() + "' for bean '" + beanName + "'", ex);
         }
-        if (factoryMethod.getParameterCount() > 0) {
-            throw new BeansException("@Bean factory method '" + beanDefinition.getFactoryMethodName() +
-                    "' on bean '" + beanDefinition.getFactoryBeanName() +
-                    "' declares parameters, but JavaConfig Phase 1 supports only no-arg factory methods");
-        }
         try {
             factoryMethod.setAccessible(true);
-            Object instance = factoryMethod.invoke(factoryBean);
+            Object[] args = resolveFactoryMethodArguments(beanName, beanDefinition, factoryMethod);
+            Object instance = factoryMethod.invoke(factoryBean, args);
             if (instance == null) {
                 throw new BeansException("@Bean method returned null: beanName='" + beanName +
                         "', factoryBeanName='" + beanDefinition.getFactoryBeanName() +
@@ -112,6 +111,22 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
                     beanDefinition.getFactoryMethodName() + "' for bean '" + beanName +
                     "': " + targetException.getMessage(), targetException);
         }
+    }
+
+    private Object[] resolveFactoryMethodArguments(String beanName, BeanDefinition beanDefinition, Method factoryMethod) {
+        Class<?>[] parameterTypes = beanDefinition.getFactoryMethodParameterTypes();
+        Object[] args = new Object[parameterTypes.length];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Class<?> parameterType = parameterTypes[i];
+            try {
+                args[i] = getBean(parameterType);
+            } catch (BeansException ex) {
+                throw new BeansException("Failed to resolve parameter index " + i + " of type [" +
+                        parameterType.getName() + "] for @Bean factory method '" +
+                        factoryMethod.getName() + "' on bean '" + beanDefinition.getFactoryBeanName() + "'", ex);
+            }
+        }
+        return args;
     }
 
     protected void populateBean(String beanName, Object bean, BeanDefinition beanDefinition) {
@@ -160,11 +175,19 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
         if (bean instanceof InitializingBean initializingBean) {
             initializingBean.afterPropertiesSet();
         }
+        invokeCustomInitMethod(beanName, bean, getBeanDefinition(beanName));
     }
 
     protected void registerDisposableBeanIfNecessary(String beanName, Object bean, BeanDefinition beanDefinition) {
-        if (beanDefinition.isSingleton() && bean instanceof DisposableBean disposableBean) {
-            registerDisposableBean(beanName, disposableBean);
+        if (!beanDefinition.isSingleton()) {
+            return;
+        }
+        boolean hasDestroyInterface = bean instanceof DisposableBean;
+        boolean hasCustomDestroyMethod = beanDefinition.getDestroyMethodName() != null
+                && !beanDefinition.getDestroyMethodName().isBlank();
+        if (hasDestroyInterface || hasCustomDestroyMethod) {
+            registerDisposableBean(beanName,
+                    new DisposableBeanAdapter(beanName, bean, beanDefinition.getDestroyMethodName()));
         }
     }
 
@@ -179,6 +202,27 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
     }
 
     protected abstract java.util.List<BeanPostProcessor> getBeanPostProcessors();
+
+    private void invokeCustomInitMethod(String beanName, Object bean, BeanDefinition beanDefinition) {
+        String initMethodName = beanDefinition.getInitMethodName();
+        if (initMethodName == null || initMethodName.isBlank()) {
+            return;
+        }
+        if (bean instanceof InitializingBean && "afterPropertiesSet".equals(initMethodName)) {
+            return;
+        }
+        try {
+            Method initMethod = bean.getClass().getMethod(initMethodName);
+            initMethod.setAccessible(true);
+            initMethod.invoke(bean);
+        } catch (NoSuchMethodException ex) {
+            throw new BeansException("Failed to find init method '" + initMethodName +
+                    "' on bean '" + beanName + "'", ex);
+        } catch (IllegalAccessException | InvocationTargetException ex) {
+            throw new BeansException("Failed to invoke init method '" + initMethodName +
+                    "' on bean '" + beanName + "'", ex);
+        }
+    }
 
     @Override
     protected boolean isConstructorResolutionInProgress() {
