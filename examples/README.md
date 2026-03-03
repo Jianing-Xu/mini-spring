@@ -1,37 +1,43 @@
 # Examples
 
-所有可运行示例都在 `examples/src/main/java`，并通过 Maven `exec:java` 直接运行。
+`examples/` 现在是独立 Maven 工程，所有可运行示例都在 `examples/src/main/java`，通过 `examples/pom.xml` 单独编译和运行。
+
+先在仓库根目录执行：
+
+```bash
+mvn test
+```
 
 ## IOC 主线
 
 ```bash
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase1.Phase1HappyPathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase1.Phase1FailurePathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase2.Phase2HappyPathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase3.Phase3HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase1.Phase1HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase1.Phase1FailurePathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase2.Phase2HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.phase3.Phase3HappyPathExample
 ```
 
 ## JavaConfig 主线
 
 ```bash
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase1.JavaConfigPhase1HappyPathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase1.JavaConfigPhase1FailurePathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase2.JavaConfigPhase2HappyPathExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase2.JavaConfigPhase2FailurePathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase1.JavaConfigPhase1HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase1.JavaConfigPhase1FailurePathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase2.JavaConfigPhase2HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.javaconfig.phase2.JavaConfigPhase2FailurePathExample
 ```
 
 ## Transaction 主线
 
 ```bash
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.transaction.phase1.TransactionPhase1HappyPathExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispring.examples.transaction.phase1.TransactionPhase1HappyPathExample
 ```
 
 ## MVC 主线
 
 ```bash
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase1.Phase1DispatcherExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase2.Phase2BindingExample
-mvn -q -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase3.Phase3MvcExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase1.Phase1DispatcherExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase2.Phase2BindingExample
+mvn -q -f examples/pom.xml -DskipTests compile exec:java -Dexec.mainClass=com.xujn.minispringmvc.examples.phase3.Phase3MvcExample
 ```
 
 ## 事务示例输出重点
