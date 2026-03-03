@@ -115,6 +115,26 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
 
     private Object[] resolveFactoryMethodArguments(String beanName, BeanDefinition beanDefinition, Method factoryMethod) {
         Class<?>[] parameterTypes = beanDefinition.getFactoryMethodParameterTypes();
+        Object[] explicitArguments = beanDefinition.getFactoryMethodArguments();
+        if (explicitArguments.length > 0) {
+            if (explicitArguments.length != parameterTypes.length) {
+                throw new BeansException("Factory method argument count mismatch for bean '" + beanName +
+                        "': expected " + parameterTypes.length + " but got " + explicitArguments.length);
+            }
+            Object[] args = new Object[explicitArguments.length];
+            for (int i = 0; i < explicitArguments.length; i++) {
+                Object argument = explicitArguments[i];
+                Class<?> parameterType = parameterTypes[i];
+                if (argument != null && !parameterType.isInstance(argument)
+                        && !(parameterType.isPrimitive() && isPrimitiveWrapper(parameterType, argument.getClass()))) {
+                    throw new BeansException("Factory method argument type mismatch for bean '" + beanName +
+                            "' at index " + i + ": expected [" + parameterType.getName() + "] but got [" +
+                            argument.getClass().getName() + "]");
+                }
+                args[i] = argument;
+            }
+            return args;
+        }
         Object[] args = new Object[parameterTypes.length];
         for (int i = 0; i < parameterTypes.length; i++) {
             Class<?> parameterType = parameterTypes[i];
@@ -127,6 +147,34 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
             }
         }
         return args;
+    }
+
+    private boolean isPrimitiveWrapper(Class<?> primitiveType, Class<?> candidateType) {
+        if (primitiveType == boolean.class) {
+            return candidateType == Boolean.class;
+        }
+        if (primitiveType == byte.class) {
+            return candidateType == Byte.class;
+        }
+        if (primitiveType == char.class) {
+            return candidateType == Character.class;
+        }
+        if (primitiveType == short.class) {
+            return candidateType == Short.class;
+        }
+        if (primitiveType == int.class) {
+            return candidateType == Integer.class;
+        }
+        if (primitiveType == long.class) {
+            return candidateType == Long.class;
+        }
+        if (primitiveType == float.class) {
+            return candidateType == Float.class;
+        }
+        if (primitiveType == double.class) {
+            return candidateType == Double.class;
+        }
+        return false;
     }
 
     protected void populateBean(String beanName, Object bean, BeanDefinition beanDefinition) {

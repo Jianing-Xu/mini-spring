@@ -25,6 +25,7 @@ public class BeanDefinition {
     private String factoryMethodName;
     private String source;
     private Class<?>[] factoryMethodParameterTypes = new Class<?>[0];
+    private Object[] factoryMethodArguments = new Object[0];
     private String initMethodName;
     private String destroyMethodName;
 
@@ -105,6 +106,16 @@ public class BeanDefinition {
         this.factoryMethodParameterTypes = factoryMethodParameterTypes == null
                 ? new Class<?>[0]
                 : factoryMethodParameterTypes.clone();
+    }
+
+    public Object[] getFactoryMethodArguments() {
+        return factoryMethodArguments.clone();
+    }
+
+    public void setFactoryMethodArguments(Object[] factoryMethodArguments) {
+        this.factoryMethodArguments = factoryMethodArguments == null
+                ? new Object[0]
+                : factoryMethodArguments.clone();
     }
 
     public String getInitMethodName() {
