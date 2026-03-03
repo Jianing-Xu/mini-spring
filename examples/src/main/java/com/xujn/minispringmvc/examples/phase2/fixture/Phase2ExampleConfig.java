@@ -1,4 +1,4 @@
-package com.xujn.minispringmvc.examples.phase1.fixture;
+package com.xujn.minispringmvc.examples.phase2.fixture;
 
 import com.xujn.minispring.context.annotation.ComponentScan;
 
@@ -7,7 +7,7 @@ import com.xujn.minispring.context.annotation.ComponentScan;
         "com.xujn.minispringmvc.adapter",
         "com.xujn.minispringmvc.bind",
         "com.xujn.minispringmvc.exception",
-        "com.xujn.minispringmvc.examples.phase1.fixture"
+        "com.xujn.minispringmvc.examples.phase2.fixture"
 })
-public class Phase1ExampleConfig {
+public class Phase2ExampleConfig {
 }
