@@ -8,6 +8,24 @@
 
 ---
 
+# 0. 当前实现状态（2026-03-03）
+
+## 0.1 已实现
+
+- JavaConfig Phase 1：`@Configuration` / `@Bean` 解析、工厂方法 Bean 注册与创建、与 AnnotationScan 并存
+- JavaConfig Phase 2：`@Bean` 方法参数按类型注入、重复 beanName FAIL_FAST、`initMethod` / `destroyMethod`
+- 相关验收与示例：`src/test/java/com/xujn/minispring/context/JavaConfigPhase1AcceptanceTest.java`、`src/test/java/com/xujn/minispring/context/JavaConfigPhase2AcceptanceTest.java`、`examples/src/main/java/com/xujn/minispring/examples/javaconfig/phase1`、`examples/src/main/java/com/xujn/minispring/examples/javaconfig/phase2`
+
+## 0.2 尚未实现
+
+- JavaConfig Phase 3：工厂方法 Bean 参与三级缓存循环依赖、工厂方法 Bean 的 AOP 提前代理一致性
+- `@Scope` 标注在 `@Bean` 方法上
+- `BeanDefinitionReader` / `AnnotatedBeanDefinitionReader` 抽象层
+
+> 下面文档中的“架构目标”包含已落地内容和后续规划；凡与当前代码不一致之处，以本节状态与各 phase 文档为准。
+
+---
+
 # 1. 背景与目标
 
 ## 1.1 为什么需要 JavaConfig
@@ -45,11 +63,13 @@ com.xujn.minispring
 ├── beans
 │   ├── factory
 │   │   ├── config
-│   │   │   ├── BeanDefinition.java                  # [MODIFY] 增加 factoryBeanName / factoryMethodName
-│   │   │   ├── BeanDefinitionRegistry.java          # 无变更
+│   │   │   ├── BeanDefinition.java                  # [MODIFY] 增加 factoryBeanName / factoryMethodName / 参数与生命周期元数据
+│   │   │   ├── BeanDefinitionRegistry.java          # [MODIFY] 增加 allowOverride 开关
 │   │   │   └── ...
 │   │   └── support
 │   │       ├── AutowireCapableBeanFactory.java       # [MODIFY] createBean 增加工厂方法分支
+│   │       ├── DefaultListableBeanFactory.java       # [MODIFY] 重复 beanName FAIL_FAST
+│   │       └── DisposableBeanAdapter.java            # [NEW] destroyMethod 适配器
 │   │       └── ...
 │   └── ...
 ├── context
@@ -62,9 +82,8 @@ com.xujn.minispring
 │   │   └── ClassPathBeanDefinitionScanner.java       # 无变更
 │   └── support
 │       └── AnnotationConfigApplicationContext.java   # [MODIFY] refresh 中集成 JavaConfig 解析
-├── core
-│   └── io
-│       └── BeanDefinitionReader.java                 # [NEW] Reader 抽象接口
+├── exception
+│   └── BeanDefinitionOverrideException.java          # [NEW] 重复 beanName 冲突异常
 └── ...
 ```
 
@@ -141,8 +160,8 @@ interface BeanDefinitionReader
 ```
 
 **实现类**：
-- `AnnotatedBeanDefinitionReader`（已有，从 `ClassPathBeanDefinitionScanner` 重构提取）
-- `ConfigurationClassBeanDefinitionReader`（新增，从 `@Configuration` 类解析 `@Bean` 方法并注册）
+- 当前未实现；保留为未来抽象方向
+- 当前代码直接使用 `ClassPathBeanDefinitionScanner` 和 `ConfigurationClassBeanDefinitionReader`
 
 ### ConfigurationClassParser
 
@@ -220,7 +239,6 @@ Phase 1 的 refresh 流程：
 | `beanName`         | `String`      | Bean 名称：@Bean(name=...) 优先，缺省为方法名       |
 | `returnType`       | `Class<?>`    | 方法返回类型（即 Bean 类型）                        |
 | `parameterTypes`   | `Class<?>[]`  | 方法参数类型列表（用于参数注入）                     |
-| `scope`            | `String`      | 作用域（从 @Scope 读取，默认 "singleton"）           |
 | `initMethodName`   | `String`      | @Bean(initMethod=...)（可选，Phase 2+）             |
 | `destroyMethodName`| `String`      | @Bean(destroyMethod=...)（可选，Phase 2+）          |
 
@@ -232,6 +250,9 @@ Phase 1 的 refresh 流程：
 |----------------------|----------|---------------------------------------------------|------------------------|
 | `factoryBeanName`    | `String` | 工厂 Bean 名称（@Configuration 类的 beanName）      | 非空时走工厂方法创建     |
 | `factoryMethodName`  | `String` | 工厂方法名称（@Bean 方法名）                        | 与 factoryBeanName 成对  |
+| `factoryMethodParameterTypes` | `Class<?>[]` | @Bean 方法参数类型列表                         | 用于工厂方法参数解析      |
+| `initMethodName`     | `String` | 自定义初始化方法名                                   | Phase 2 已实现            |
+| `destroyMethodName`  | `String` | 自定义销毁方法名                                     | Phase 2 已实现            |
 | `isFactoryMethod()`  | `boolean`| `factoryBeanName != null && factoryMethodName != null` | 判断走哪个创建分支      |
 
 > [注释] factoryBeanName 与 configurationClass 的关系
@@ -285,11 +306,12 @@ class ConfigurationClassPostProcessor implements BeanFactoryPostProcessor
 
 | 规则                               | 描述                                                          |
 |------------------------------------|---------------------------------------------------------------|
-| beanName 唯一性                    | 注册前检查 `registry.containsBeanDefinition(beanName)`，重复则 FAIL_FAST |
+| beanName 唯一性                    | 注册前检查是否重复，默认 FAIL_FAST，可通过 `setAllowOverride(true)` 放开 |
 | beanClass                          | 设为 @Bean 方法的返回类型                                      |
 | factoryBeanName                    | 设为 @Configuration 类的 beanName                              |
 | factoryMethodName                  | 设为 @Bean 方法名                                              |
-| scope                              | 从 @Scope 注解读取，默认 `"singleton"`                         |
+| factoryMethodParameterTypes        | 设为 @Bean 方法参数类型列表                                     |
+| initMethodName / destroyMethodName | 从 @Bean 注解读取                                               |
 | 来源标记                           | BeanDefinition 增加 `source` 字段（String 类型），记录来源为 `"JavaConfig:<configClassName>"` |
 
 ---
@@ -395,7 +417,7 @@ flowchart TD
 > [注释] @Bean 方法参数解析策略
 > - 背景：@Bean 方法的参数自动从容器中按类型解析
 > - 影响：如果同类型存在多个 Bean，按类型解析将产生歧义
-> - 取舍：Phase 1 按类型解析，同类型多 Bean 时抛出 `BeansException("expected single bean of type X but found N")` 快速失败
+> - 取舍：Phase 2 按类型解析，同类型多 Bean 时抛出 `BeansException("expected single bean of type X but found N")` 快速失败
 > - 可选增强：后续支持 `@Qualifier` 参数注解消歧；支持参数名匹配 beanName
 
 ---
@@ -426,7 +448,7 @@ flowchart TD
 |------------------------|-------------------------------------------------------------|
 | 默认策略               | **FAIL_FAST** — 重复 beanName 立即抛出异常                    |
 | 异常类型               | `BeanDefinitionOverrideException extends BeansException`     |
-| 异常信息               | 包含：冲突 beanName、原 BD 来源（类名+行号或配置源）、新 BD 来源 |
+| 异常信息               | 包含：冲突 beanName、原 BD 来源、 新 BD 来源 |
 | AnnotationScan vs JavaConfig | 两者在不同阶段注册，BFPP 阶段（JavaConfig）发现冲突时报错   |
 | 优先级（OVERRIDE 模式下）| JavaConfig 覆盖 AnnotationScan（与 Spring 行为一致，后注册优先） |
 
@@ -515,14 +537,14 @@ flowchart TD
 | 参数解析失败 → 明确异常                 | CGLIB 增强      |
 | FAIL_FAST 冲突检测                     | @Import         |
 | @Bean(initMethod/destroyMethod)         | @Primary        |
-| @Scope("prototype") 在 @Bean 上        | —               |
+| `BeanDefinitionRegistry.setAllowOverride()` 开关 | `@Scope("prototype")` 在 `@Bean` 上 |
 
 ### 交付物
 
 - @Bean 参数解析逻辑（`AutowireCapableBeanFactory` 工厂方法分支中）
 - `BeanDefinitionOverrideException` 异常
 - `BeanDefinitionRegistry.setAllowOverride()` 开关
-- 单元测试
+- 验收测试与可运行示例
 
 ### 验收标准
 
