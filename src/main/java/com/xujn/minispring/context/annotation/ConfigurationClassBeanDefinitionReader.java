@@ -19,6 +19,9 @@ public class ConfigurationClassBeanDefinitionReader {
                         new BeanDefinition(beanMethod.getReturnType(), beanMethod.getBeanName());
                 beanDefinition.setFactoryBeanName(configurationClass.getBeanName());
                 beanDefinition.setFactoryMethodName(beanMethod.getMethod().getName());
+                beanDefinition.setFactoryMethodParameterTypes(beanMethod.getParameterTypes());
+                beanDefinition.setInitMethodName(beanMethod.getInitMethodName());
+                beanDefinition.setDestroyMethodName(beanMethod.getDestroyMethodName());
                 beanDefinition.setSource("JavaConfig:" + configurationClass.getConfigClass().getName());
                 registry.registerBeanDefinition(beanMethod.getBeanName(), beanDefinition);
             }

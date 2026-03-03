@@ -33,7 +33,10 @@ public class ConfigurationClassParser {
                 configurationClass.getBeanMethods().add(new BeanMethod(
                         method,
                         resolveBeanName(method, bean),
-                        method.getReturnType()
+                        method.getReturnType(),
+                        method.getParameterTypes(),
+                        bean.initMethod().trim(),
+                        bean.destroyMethod().trim()
                 ));
             }
             configurationClasses.add(configurationClass);

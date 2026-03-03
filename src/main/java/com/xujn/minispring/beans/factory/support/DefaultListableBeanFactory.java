@@ -3,6 +3,7 @@ package com.xujn.minispring.beans.factory.support;
 import com.xujn.minispring.beans.factory.config.BeanDefinition;
 import com.xujn.minispring.beans.factory.config.BeanDefinitionRegistry;
 import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
+import com.xujn.minispring.exception.BeanDefinitionOverrideException;
 import com.xujn.minispring.exception.BeansException;
 import com.xujn.minispring.exception.NoSuchBeanDefinitionException;
 
@@ -22,13 +23,23 @@ public class DefaultListableBeanFactory extends AutowireCapableBeanFactory imple
     private final Map<String, BeanDefinition> beanDefinitionMap = new LinkedHashMap<>();
     private final List<String> beanDefinitionNames = new ArrayList<>();
     private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<>();
+    private boolean allowOverride;
 
     @Override
     public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition) {
         Objects.requireNonNull(beanName, "beanName must not be null");
         Objects.requireNonNull(beanDefinition, "beanDefinition must not be null");
         if (beanDefinitionMap.containsKey(beanName)) {
-            throw new BeansException("BeanDefinition named '" + beanName + "' is already registered");
+            BeanDefinition existing = beanDefinitionMap.get(beanName);
+            if (!allowOverride) {
+                throw new BeanDefinitionOverrideException(
+                        beanName,
+                        existing == null ? "unknown" : existing.getSource(),
+                        beanDefinition.getSource()
+                );
+            }
+            beanDefinitionMap.put(beanName, beanDefinition);
+            return;
         }
         beanDefinitionMap.put(beanName, beanDefinition);
         beanDefinitionNames.add(beanName);
@@ -56,6 +67,16 @@ public class DefaultListableBeanFactory extends AutowireCapableBeanFactory imple
     @Override
     public int getBeanDefinitionCount() {
         return beanDefinitionNames.size();
+    }
+
+    @Override
+    public void setAllowOverride(boolean allowOverride) {
+        this.allowOverride = allowOverride;
+    }
+
+    @Override
+    public boolean isAllowOverride() {
+        return allowOverride;
     }
 
     public void preInstantiateSingletons() {

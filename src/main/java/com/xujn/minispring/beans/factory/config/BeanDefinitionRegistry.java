@@ -16,4 +16,8 @@ public interface BeanDefinitionRegistry {
     String[] getBeanDefinitionNames();
 
     int getBeanDefinitionCount();
+
+    void setAllowOverride(boolean allowOverride);
+
+    boolean isAllowOverride();
 }

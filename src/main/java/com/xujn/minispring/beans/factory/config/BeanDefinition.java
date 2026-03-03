@@ -24,6 +24,9 @@ public class BeanDefinition {
     private String factoryBeanName;
     private String factoryMethodName;
     private String source;
+    private Class<?>[] factoryMethodParameterTypes = new Class<?>[0];
+    private String initMethodName;
+    private String destroyMethodName;
 
     public BeanDefinition(Class<?> beanClass, String beanName) {
         this.beanClass = Objects.requireNonNull(beanClass, "beanClass must not be null");
@@ -92,5 +95,31 @@ public class BeanDefinition {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public Class<?>[] getFactoryMethodParameterTypes() {
+        return factoryMethodParameterTypes.clone();
+    }
+
+    public void setFactoryMethodParameterTypes(Class<?>[] factoryMethodParameterTypes) {
+        this.factoryMethodParameterTypes = factoryMethodParameterTypes == null
+                ? new Class<?>[0]
+                : factoryMethodParameterTypes.clone();
+    }
+
+    public String getInitMethodName() {
+        return initMethodName;
+    }
+
+    public void setInitMethodName(String initMethodName) {
+        this.initMethodName = initMethodName;
+    }
+
+    public String getDestroyMethodName() {
+        return destroyMethodName;
+    }
+
+    public void setDestroyMethodName(String destroyMethodName) {
+        this.destroyMethodName = destroyMethodName;
     }
 }
