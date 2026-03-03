@@ -10,4 +10,8 @@ public class BeanCurrentlyInCreationException extends BeansException {
     public BeanCurrentlyInCreationException(String beanName, String dependencyChain) {
         super("Bean '" + beanName + "' is currently in creation: " + dependencyChain);
     }
+
+    public BeanCurrentlyInCreationException(String beanName, String dependencyChain, String detail) {
+        super("Bean '" + beanName + "' is currently in creation: " + dependencyChain + " - " + detail);
+    }
 }
