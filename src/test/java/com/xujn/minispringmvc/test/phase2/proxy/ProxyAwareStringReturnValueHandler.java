@@ -2,6 +2,7 @@ package com.xujn.minispringmvc.test.phase2.proxy;
 
 import com.xujn.minispring.context.annotation.Component;
 import com.xujn.minispringmvc.adapter.support.MethodParameter;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
@@ -14,10 +15,12 @@ public class ProxyAwareStringReturnValueHandler implements ProxyReturnHandlerDel
     }
 
     @Override
-    public void handleReturnValue(Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
+    public ModelAndView handleReturnValue(
+            Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
         if (!response.isCommitted()) {
             response.write("proxy-handled-" + returnValue);
         }
+        return ModelAndView.empty();
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.xujn.minispringmvc.test.phase2.override;
 import com.xujn.minispring.context.annotation.Component;
 import com.xujn.minispringmvc.adapter.HandlerMethodReturnValueHandler;
 import com.xujn.minispringmvc.adapter.support.MethodParameter;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 import com.xujn.minispringmvc.support.PriorityOrdered;
@@ -17,10 +18,12 @@ public class CustomHighPriorityStringReturnValueHandler implements HandlerMethod
     }
 
     @Override
-    public void handleReturnValue(Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
+    public ModelAndView handleReturnValue(
+            Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
         if (!response.isCommitted()) {
             response.write("handled-" + returnValue);
         }
+        return ModelAndView.empty();
     }
 
     @Override
