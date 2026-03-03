@@ -1,7 +1,6 @@
 package com.xujn.minispring.context;
 
 import com.xujn.minispring.context.support.AnnotationConfigApplicationContext;
-import com.xujn.minispring.exception.BeansException;
 import com.xujn.minispring.test.phase2.aop.interceptor.LoggingInterceptor;
 import com.xujn.minispring.test.phase2.aop.service.ConsumerService;
 import com.xujn.minispring.test.phase2.aop.service.NoInterfaceBean;
@@ -185,9 +184,9 @@ class Phase2AcceptanceTest {
     }
 
     @Test
-    void phase1RegressionShouldStillPassForCircularDependency() {
-        BeansException exception = org.junit.jupiter.api.Assertions.assertThrows(BeansException.class,
-                () -> new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct"));
-        assertTrue(exception.getMessage().contains("circular"));
+    void phase1RegressionShouldSupportSingletonFieldCircularDependency() {
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct");
+        assertNotNull(context.getBean(com.xujn.minispring.test.phase1.cycle.direct.CircularA.class));
     }
 }

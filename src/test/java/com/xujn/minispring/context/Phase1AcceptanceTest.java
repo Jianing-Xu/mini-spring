@@ -1,7 +1,6 @@
 package com.xujn.minispring.context;
 
 import com.xujn.minispring.context.support.AnnotationConfigApplicationContext;
-import com.xujn.minispring.exception.BeanCurrentlyInCreationException;
 import com.xujn.minispring.exception.BeansException;
 import com.xujn.minispring.exception.NoSuchBeanDefinitionException;
 import com.xujn.minispring.test.phase1.ambiguity.SomeService;
@@ -184,27 +183,29 @@ class Phase1AcceptanceTest {
 
     @Test
     void tc51_directCircularDependencyFails() {
-        BeanCurrentlyInCreationException exception = assertThrows(BeanCurrentlyInCreationException.class,
-                () -> new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct"));
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct");
+        CircularA circularA = context.getBean(CircularA.class);
 
-        assertTrue(exception.getMessage().contains("circularA -> circularB -> circularA")
-                || exception.getMessage().contains("circularB -> circularA -> circularB"));
+        assertSame(circularA, circularA.getCircularB().getCircularA());
     }
 
     @Test
     void tc52_indirectCircularDependencyFails() {
-        BeanCurrentlyInCreationException exception = assertThrows(BeanCurrentlyInCreationException.class,
-                () -> new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.indirect"));
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.indirect");
+        CycleA cycleA = context.getBean(CycleA.class);
 
-        assertTrue(exception.getMessage().contains("cycleA -> cycleB -> cycleC -> cycleA"));
+        assertSame(cycleA, cycleA.getCycleB().getCycleC().getCycleA());
     }
 
     @Test
     void tc53_selfDependencyFails() {
-        BeanCurrentlyInCreationException exception = assertThrows(BeanCurrentlyInCreationException.class,
-                () -> new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.self"));
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.self");
+        SelfDependent selfDependent = context.getBean(SelfDependent.class);
 
-        assertTrue(exception.getMessage().contains("selfDependent -> selfDependent"));
+        assertSame(selfDependent, selfDependent.getSelfDependent());
     }
 
     @Test
@@ -230,11 +231,9 @@ class Phase1AcceptanceTest {
 
     @Test
     void tc62_circularDependencyMessageContainsBeanPath() {
-        BeanCurrentlyInCreationException exception = assertThrows(BeanCurrentlyInCreationException.class,
-                () -> new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct"));
-
-        assertTrue(exception.getMessage().contains("circularA -> circularB -> circularA")
-                || exception.getMessage().contains("circularB -> circularA -> circularB"));
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext("com.xujn.minispring.test.phase1.cycle.direct");
+        assertSame(context.getBean(CircularA.class), context.getBean(CircularA.class).getCircularB().getCircularA());
     }
 
     @Test
