@@ -1,10 +1,13 @@
 package com.xujn.minispring.core;
 
 import com.xujn.minispring.beans.factory.config.BeanDefinition;
+import com.xujn.minispring.context.annotation.Configuration;
 import com.xujn.minispring.context.annotation.Component;
 import com.xujn.minispring.context.annotation.ComponentScan;
 import com.xujn.minispring.context.annotation.Scope;
 import com.xujn.minispring.exception.BeansException;
+
+import java.lang.annotation.Annotation;
 
 /**
  * Utility methods for reading and normalizing annotation metadata.
@@ -17,7 +20,19 @@ public final class AnnotationUtils {
     }
 
     public static boolean isComponent(Class<?> beanClass) {
-        return beanClass.isAnnotationPresent(Component.class);
+        if (beanClass.isAnnotationPresent(Component.class)) {
+            return true;
+        }
+        for (Annotation annotation : beanClass.getAnnotations()) {
+            if (annotation.annotationType().isAnnotationPresent(Component.class)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isConfigurationClass(Class<?> beanClass) {
+        return beanClass.isAnnotationPresent(Configuration.class);
     }
 
     public static String resolveBeanName(Class<?> beanClass) {

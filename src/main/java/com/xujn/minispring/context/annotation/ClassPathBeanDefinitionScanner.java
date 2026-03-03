@@ -83,6 +83,7 @@ public class ClassPathBeanDefinitionScanner {
             BeanDefinition beanDefinition =
                     new BeanDefinition(beanClass, AnnotationUtils.resolveBeanName(beanClass));
             beanDefinition.setScope(AnnotationUtils.resolveScope(beanClass));
+            beanDefinition.setSource("AnnotationScan:" + beanClass.getName());
             registry.registerBeanDefinition(beanDefinition.getBeanName(), beanDefinition);
         }
     }

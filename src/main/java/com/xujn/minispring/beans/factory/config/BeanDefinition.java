@@ -21,6 +21,9 @@ public class BeanDefinition {
     private String scope = SCOPE_SINGLETON;
     private final List<PropertyValue> propertyValues = new ArrayList<>();
     private boolean lazyInit;
+    private String factoryBeanName;
+    private String factoryMethodName;
+    private String source;
 
     public BeanDefinition(Class<?> beanClass, String beanName) {
         this.beanClass = Objects.requireNonNull(beanClass, "beanClass must not be null");
@@ -61,5 +64,33 @@ public class BeanDefinition {
 
     public boolean isPrototype() {
         return SCOPE_PROTOTYPE.equals(scope);
+    }
+
+    public String getFactoryBeanName() {
+        return factoryBeanName;
+    }
+
+    public void setFactoryBeanName(String factoryBeanName) {
+        this.factoryBeanName = factoryBeanName;
+    }
+
+    public String getFactoryMethodName() {
+        return factoryMethodName;
+    }
+
+    public void setFactoryMethodName(String factoryMethodName) {
+        this.factoryMethodName = factoryMethodName;
+    }
+
+    public boolean isFactoryMethod() {
+        return factoryBeanName != null && factoryMethodName != null;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 }
