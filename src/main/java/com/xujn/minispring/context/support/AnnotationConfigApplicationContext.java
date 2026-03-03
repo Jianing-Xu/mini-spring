@@ -12,7 +12,9 @@ import com.xujn.minispring.exception.BeansException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ApplicationContext implementation bootstrapped from annotation scanning.
@@ -111,6 +113,20 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory beanFactory) {
         BeanFactoryPostProcessor configurationClassPostProcessor = new ConfigurationClassPostProcessor();
         configurationClassPostProcessor.postProcessBeanFactory(beanFactory);
+        Set<String> invokedBeanNames = new LinkedHashSet<>();
+        boolean invokedNewProcessor;
+        do {
+            invokedNewProcessor = false;
+            for (String beanName : beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class)) {
+                if (!invokedBeanNames.add(beanName)) {
+                    continue;
+                }
+                BeanFactoryPostProcessor beanFactoryPostProcessor =
+                        beanFactory.getBean(beanName, BeanFactoryPostProcessor.class);
+                beanFactoryPostProcessor.postProcessBeanFactory(beanFactory);
+                invokedNewProcessor = true;
+            }
+        } while (invokedNewProcessor);
     }
 
     private void registerBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
