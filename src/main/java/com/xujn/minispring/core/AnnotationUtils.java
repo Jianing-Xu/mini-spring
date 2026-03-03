@@ -8,7 +8,7 @@ import com.xujn.minispring.exception.BeansException;
 
 /**
  * Utility methods for reading and normalizing annotation metadata.
- * Constraint: only Phase 1 annotations are supported here.
+ * Constraint: only Phase 1 and Phase 2 annotation metadata are supported here.
  * Thread-safety: stateless utility methods are thread-safe.
  */
 public final class AnnotationUtils {
@@ -38,9 +38,10 @@ public final class AnnotationUtils {
             return BeanDefinition.SCOPE_SINGLETON;
         }
         String scopeValue = scope.value().trim();
-        if (!BeanDefinition.SCOPE_SINGLETON.equals(scopeValue)) {
+        if (!BeanDefinition.SCOPE_SINGLETON.equals(scopeValue)
+                && !BeanDefinition.SCOPE_PROTOTYPE.equals(scopeValue)) {
             throw new BeansException("Bean class [" + beanClass.getName() +
-                    "] declares unsupported scope '" + scopeValue + "' in Phase 1");
+                    "] declares unsupported scope '" + scopeValue + "'");
         }
         return scopeValue;
     }

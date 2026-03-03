@@ -14,6 +14,7 @@ import java.util.Objects;
 public class BeanDefinition {
 
     public static final String SCOPE_SINGLETON = "singleton";
+    public static final String SCOPE_PROTOTYPE = "prototype";
 
     private final Class<?> beanClass;
     private final String beanName;
@@ -56,5 +57,9 @@ public class BeanDefinition {
 
     public boolean isSingleton() {
         return SCOPE_SINGLETON.equals(scope);
+    }
+
+    public boolean isPrototype() {
+        return SCOPE_PROTOTYPE.equals(scope);
     }
 }

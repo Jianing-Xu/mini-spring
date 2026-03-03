@@ -1,7 +1,10 @@
 package com.xujn.minispring.beans.factory.support;
 
+import com.xujn.minispring.beans.factory.DisposableBean;
 import com.xujn.minispring.beans.factory.config.SingletonBeanRegistry;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +19,7 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
     private final ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<>();
     private final Set<String> singletonsCurrentlyInCreation =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Map<String, DisposableBean> disposableBeans = new LinkedHashMap<>();
 
     @Override
     public Object getSingleton(String beanName) {
@@ -42,5 +46,21 @@ public class DefaultSingletonBeanRegistry implements SingletonBeanRegistry {
 
     protected boolean isSingletonCurrentlyInCreation(String beanName) {
         return singletonsCurrentlyInCreation.contains(beanName);
+    }
+
+    public void registerDisposableBean(String beanName, DisposableBean disposableBean) {
+        disposableBeans.put(beanName, disposableBean);
+    }
+
+    public void destroySingletons() {
+        for (Map.Entry<String, DisposableBean> entry : new LinkedHashMap<>(disposableBeans).entrySet()) {
+            try {
+                entry.getValue().destroy();
+            } catch (RuntimeException ex) {
+                System.err.println("WARN destroy bean '" + entry.getKey() + "' failed: " + ex.getMessage());
+            }
+        }
+        disposableBeans.clear();
+        singletonObjects.clear();
     }
 }
