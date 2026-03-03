@@ -5,6 +5,8 @@ import com.xujn.minispring.context.annotation.Component;
 import com.xujn.minispringmvc.annotation.Controller;
 import com.xujn.minispringmvc.annotation.RequestMapping;
 import com.xujn.minispringmvc.context.MvcApplicationContext;
+import com.xujn.minispringmvc.context.support.DefaultMvcInfrastructureInitializer;
+import com.xujn.minispringmvc.interceptor.HandlerInterceptor;
 import com.xujn.minispringmvc.servlet.HandlerExecutionChain;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.support.Ordered;
@@ -19,13 +21,16 @@ import java.lang.reflect.Method;
 @Component
 public class RequestMappingHandlerMapping implements HandlerMapping, Ordered {
 
+    private final DefaultMvcInfrastructureInitializer infrastructureInitializer = new DefaultMvcInfrastructureInitializer();
     private final RequestMappingRegistry registry = new RequestMappingRegistry();
+    private java.util.List<HandlerInterceptor> interceptors = java.util.List.of();
     private boolean initialized;
 
     public void initialize(MvcApplicationContext context) {
         if (initialized) {
             return;
         }
+        this.interceptors = infrastructureInitializer.initializeBeans(context, HandlerInterceptor.class);
         for (String beanName : context.getBeanDefinitionNames()) {
             BeanDefinition beanDefinition = context.getBeanDefinition(beanName);
             Class<?> beanClass = beanDefinition.getBeanClass();
@@ -57,7 +62,7 @@ public class RequestMappingHandlerMapping implements HandlerMapping, Ordered {
     @Override
     public HandlerExecutionChain getHandler(WebRequest request) {
         HandlerMethod handlerMethod = registry.getHandlerMethod(request.getMethod(), request.getRequestUri());
-        return handlerMethod == null ? null : new HandlerExecutionChain(handlerMethod);
+        return handlerMethod == null ? null : new HandlerExecutionChain(handlerMethod, interceptors);
     }
 
     public int getRegistrySize() {

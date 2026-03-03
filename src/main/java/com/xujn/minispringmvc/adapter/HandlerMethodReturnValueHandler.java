@@ -1,6 +1,7 @@
 package com.xujn.minispringmvc.adapter;
 
 import com.xujn.minispringmvc.adapter.support.MethodParameter;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
@@ -13,5 +14,6 @@ public interface HandlerMethodReturnValueHandler {
 
     boolean supportsReturnType(MethodParameter returnType);
 
-    void handleReturnValue(Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) throws Exception;
+    ModelAndView handleReturnValue(
+            Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) throws Exception;
 }

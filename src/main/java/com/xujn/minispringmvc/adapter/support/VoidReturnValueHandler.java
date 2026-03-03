@@ -2,6 +2,7 @@ package com.xujn.minispringmvc.adapter.support;
 
 import com.xujn.minispring.context.annotation.Component;
 import com.xujn.minispringmvc.adapter.HandlerMethodReturnValueHandler;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 import com.xujn.minispringmvc.support.Ordered;
@@ -20,8 +21,10 @@ public class VoidReturnValueHandler implements HandlerMethodReturnValueHandler, 
     }
 
     @Override
-    public void handleReturnValue(Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
+    public ModelAndView handleReturnValue(
+            Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
         // Intentionally no-op: void means the handler completed without a response body in Phase 1.
+        return ModelAndView.empty();
     }
 
     @Override

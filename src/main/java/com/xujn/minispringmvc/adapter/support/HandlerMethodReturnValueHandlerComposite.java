@@ -2,6 +2,7 @@ package com.xujn.minispringmvc.adapter.support;
 
 import com.xujn.minispringmvc.adapter.HandlerMethodReturnValueHandler;
 import com.xujn.minispringmvc.exception.UnsupportedHandlerMethodReturnValueException;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
@@ -30,12 +31,11 @@ public final class HandlerMethodReturnValueHandlerComposite {
         return handlers.stream().anyMatch(handler -> handler.supportsReturnType(returnType));
     }
 
-    public void handleReturnValue(
+    public ModelAndView handleReturnValue(
             Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) throws Exception {
         for (HandlerMethodReturnValueHandler handler : handlers) {
             if (handler.supportsReturnType(returnType)) {
-                handler.handleReturnValue(returnValue, returnType, request, response);
-                return;
+                return handler.handleReturnValue(returnValue, returnType, request, response);
             }
         }
         throw new UnsupportedHandlerMethodReturnValueException(

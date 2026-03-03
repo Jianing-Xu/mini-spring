@@ -1,5 +1,6 @@
 package com.xujn.minispringmvc.exception;
 
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
@@ -10,5 +11,7 @@ import com.xujn.minispringmvc.servlet.WebResponse;
  */
 public interface ExceptionResolver {
 
-    boolean resolveException(WebRequest request, WebResponse response, Object handler, Exception ex) throws Exception;
+    boolean supports(Exception ex, Object handler);
+
+    ModelAndView resolveException(WebRequest request, WebResponse response, Object handler, Exception ex) throws Exception;
 }

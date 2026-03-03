@@ -8,29 +8,26 @@ import com.xujn.minispringmvc.servlet.WebResponse;
 import com.xujn.minispringmvc.support.Ordered;
 
 /**
- * Writes String return values directly to the response body.
- * Constraint: Phase 1 has view resolution disabled, so String always means response body text.
+ * Returns ModelAndView values directly to the dispatcher for rendering.
+ * Constraint: active only when view resolution is enabled by the dispatcher.
  * Thread-safety: stateless and thread-safe.
  */
 @Component
-public class StringReturnValueHandler implements HandlerMethodReturnValueHandler, Ordered {
+public class ModelAndViewReturnValueHandler implements HandlerMethodReturnValueHandler, Ordered {
 
     @Override
     public boolean supportsReturnType(MethodParameter returnType) {
-        return returnType.getParameterType() == String.class;
+        return ModelAndView.class.isAssignableFrom(returnType.getParameterType());
     }
 
     @Override
     public ModelAndView handleReturnValue(
             Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
-        if (!response.isCommitted()) {
-            response.write(returnValue == null ? "" : returnValue.toString());
-        }
-        return ModelAndView.empty();
+        return returnValue == null ? ModelAndView.empty() : (ModelAndView) returnValue;
     }
 
     @Override
     public int getOrder() {
-        return 100;
+        return 10;
     }
 }

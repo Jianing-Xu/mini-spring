@@ -1,16 +1,12 @@
 package com.xujn.minispringmvc.adapter.support;
 
-import com.xujn.minispringmvc.adapter.HandlerMethodArgumentResolver;
-import com.xujn.minispringmvc.adapter.HandlerMethodReturnValueHandler;
-import com.xujn.minispringmvc.exception.MvcException;
 import com.xujn.minispringmvc.mapping.HandlerMethod;
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
-
 /**
  * Coordinates argument resolution, reflective invocation, and return value handling for a HandlerMethod.
  * Constraint: Phase 1 uses simple ordered lists instead of composite extension chains.
@@ -31,7 +27,7 @@ public class InvocableHandlerMethod {
         this.returnValueHandlers = returnValueHandlers;
     }
 
-    public void invokeForRequest(WebRequest request, WebResponse response) throws Exception {
+    public ModelAndView invokeForRequest(WebRequest request, WebResponse response) throws Exception {
         Object[] arguments = getMethodArgumentValues(request, response);
         Method invocableMethod = handlerMethod.getInvocableMethod();
         Object returnValue;
@@ -44,9 +40,9 @@ public class InvocableHandlerMethod {
             }
             throw new RuntimeException(targetException);
         } catch (IllegalAccessException ex) {
-            throw new MvcException("Failed to invoke handler [" + handlerMethod.getShortLogMessage() + "]", ex);
+            throw new IllegalStateException("Failed to invoke handler [" + handlerMethod.getShortLogMessage() + "]", ex);
         }
-        handleReturnValue(returnValue, request, response);
+        return handleReturnValue(returnValue, request, response);
     }
 
     private Object[] getMethodArgumentValues(WebRequest request, WebResponse response) throws Exception {
@@ -63,7 +59,7 @@ public class InvocableHandlerMethod {
         return argumentResolvers.resolveArgument(parameter, request, response);
     }
 
-    private void handleReturnValue(Object returnValue, WebRequest request, WebResponse response) throws Exception {
-        returnValueHandlers.handleReturnValue(returnValue, handlerMethod.getReturnType(), request, response);
+    private ModelAndView handleReturnValue(Object returnValue, WebRequest request, WebResponse response) throws Exception {
+        return returnValueHandlers.handleReturnValue(returnValue, handlerMethod.getReturnType(), request, response);
     }
 }

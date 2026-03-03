@@ -1,5 +1,6 @@
 package com.xujn.minispringmvc.adapter;
 
+import com.xujn.minispringmvc.servlet.ModelAndView;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 
@@ -12,5 +13,5 @@ public interface HandlerAdapter {
 
     boolean supports(Object handler);
 
-    void handle(WebRequest request, WebResponse response, Object handler) throws Exception;
+    ModelAndView handle(WebRequest request, WebResponse response, Object handler) throws Exception;
 }

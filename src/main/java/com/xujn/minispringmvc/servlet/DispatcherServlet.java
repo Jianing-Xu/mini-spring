@@ -4,9 +4,9 @@ import com.xujn.minispring.context.support.AnnotationConfigApplicationContext;
 import com.xujn.minispringmvc.adapter.HandlerAdapter;
 import com.xujn.minispringmvc.context.MvcApplicationContext;
 import com.xujn.minispringmvc.context.support.DefaultMvcInfrastructureInitializer;
-import com.xujn.minispringmvc.exception.DefaultHandlerExceptionResolver;
 import com.xujn.minispringmvc.exception.ExceptionResolver;
 import com.xujn.minispringmvc.exception.HandlerAdapterConflictException;
+import com.xujn.minispringmvc.exception.HandlerExceptionResolverComposite;
 import com.xujn.minispringmvc.exception.MvcException;
 import com.xujn.minispringmvc.exception.NoHandlerAdapterException;
 import com.xujn.minispringmvc.exception.NoHandlerFoundException;
@@ -14,6 +14,9 @@ import com.xujn.minispringmvc.exception.UnsupportedHandlerMethodParameterExcepti
 import com.xujn.minispringmvc.exception.UnsupportedHandlerMethodReturnValueException;
 import com.xujn.minispringmvc.mapping.HandlerMapping;
 import com.xujn.minispringmvc.mapping.RequestMappingHandlerMapping;
+import com.xujn.minispringmvc.view.View;
+import com.xujn.minispringmvc.view.ViewResolver;
+import com.xujn.minispringmvc.view.support.SimpleViewResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +35,8 @@ public class DispatcherServlet {
     private List<HandlerMapping> handlerMappings = List.of();
     private List<HandlerAdapter> handlerAdapters = List.of();
     private List<ExceptionResolver> exceptionResolvers = List.of();
+    private List<ViewResolver> viewResolvers = List.of();
+    private final HandlerExceptionResolverComposite exceptionResolverComposite = new HandlerExceptionResolverComposite();
     private boolean initialized;
 
     public DispatcherServlet() {
@@ -46,9 +51,8 @@ public class DispatcherServlet {
         this.handlerMappings = infrastructureInitializer.initializeBeans(mvcApplicationContext, HandlerMapping.class);
         this.handlerAdapters = infrastructureInitializer.initializeBeans(mvcApplicationContext, HandlerAdapter.class);
         this.exceptionResolvers = infrastructureInitializer.initializeBeans(mvcApplicationContext, ExceptionResolver.class);
-        if (exceptionResolvers.isEmpty()) {
-            this.exceptionResolvers = List.of(new DefaultHandlerExceptionResolver());
-        }
+        this.viewResolvers = infrastructureInitializer.initializeBeans(mvcApplicationContext, ViewResolver.class);
+        exceptionResolverComposite.addResolvers(exceptionResolvers);
         for (HandlerMapping handlerMapping : handlerMappings) {
             if (handlerMapping instanceof RequestMappingHandlerMapping requestMappingHandlerMapping) {
                 requestMappingHandlerMapping.initialize(mvcApplicationContext);
@@ -59,27 +63,58 @@ public class DispatcherServlet {
                 requestMappingHandlerAdapter.initialize(mvcApplicationContext);
             }
         }
+        for (ViewResolver viewResolver : viewResolvers) {
+            if (viewResolver instanceof SimpleViewResolver simpleViewResolver) {
+                simpleViewResolver.initialize(mvcApplicationContext);
+            }
+        }
         this.initialized = true;
     }
 
     public void service(WebRequest request, WebResponse response) {
         ensureInitialized();
-        Object handler = null;
+        HandlerExecutionChain executionChain = null;
+        ModelAndView modelAndView = null;
+        Exception dispatchException = null;
         try {
-            HandlerExecutionChain executionChain = getHandler(request);
+            executionChain = getHandler(request);
             if (executionChain == null) {
                 throw new NoHandlerFoundException(request.getMethod(), request.getRequestUri());
             }
-            handler = executionChain.getHandler();
+            if (!executionChain.applyPreHandle(request, response)) {
+                return;
+            }
+            Object handler = executionChain.getHandler();
             HandlerAdapter handlerAdapter = getHandlerAdapter(handler);
-            handlerAdapter.handle(request, response, handler);
+            modelAndView = handlerAdapter.handle(request, response, handler);
+            executionChain.applyPostHandle(request, response, modelAndView);
+            renderModelAndView(modelAndView, request, response);
         } catch (NoHandlerAdapterException
                  | HandlerAdapterConflictException
                  | UnsupportedHandlerMethodParameterException
                  | UnsupportedHandlerMethodReturnValueException ex) {
             throw ex;
         } catch (Exception ex) {
-            processDispatchException(request, response, handler, ex);
+            dispatchException = ex;
+            modelAndView = processDispatchException(request, response, executionChain == null ? null : executionChain.getHandler(), ex);
+            if (modelAndView != null && !response.isCommitted()) {
+                try {
+                    renderModelAndView(modelAndView, request, response);
+                } catch (Exception renderEx) {
+                    dispatchException = renderEx;
+                    if (!response.isCommitted()) {
+                        processDispatchException(request, response, executionChain == null ? null : executionChain.getHandler(), renderEx);
+                    }
+                }
+            }
+        } finally {
+            if (executionChain != null) {
+                try {
+                    executionChain.triggerAfterCompletion(request, response, dispatchException);
+                } catch (Exception ex) {
+                    throw new MvcException("Failed during afterCompletion: " + ex.getMessage(), ex);
+                }
+            }
         }
     }
 
@@ -93,6 +128,10 @@ public class DispatcherServlet {
 
     public List<ExceptionResolver> getExceptionResolvers() {
         return exceptionResolvers;
+    }
+
+    public List<ViewResolver> getViewResolvers() {
+        return viewResolvers;
     }
 
     private void ensureInitialized() {
@@ -130,16 +169,39 @@ public class DispatcherServlet {
         return supportingAdapters.get(0);
     }
 
-    private void processDispatchException(WebRequest request, WebResponse response, Object handler, Exception ex) {
-        for (ExceptionResolver exceptionResolver : exceptionResolvers) {
-            try {
-                if (exceptionResolver.resolveException(request, response, handler, ex)) {
-                    return;
-                }
-            } catch (Exception resolverEx) {
-                throw new MvcException("Failed to resolve exception [" + ex.getMessage() + "]", resolverEx);
+    private ModelAndView processDispatchException(
+            WebRequest request, WebResponse response, Object handler, Exception ex) {
+        try {
+            ModelAndView modelAndView = exceptionResolverComposite.resolveException(request, response, handler, ex);
+            if (modelAndView != null) {
+                return modelAndView;
             }
+        } catch (Exception resolverEx) {
+            throw new MvcException("Failed to resolve exception [" + ex.getMessage() + "]", resolverEx);
         }
         throw new MvcException("Unresolved MVC exception [" + ex.getMessage() + "]", ex);
+    }
+
+    private void renderModelAndView(ModelAndView modelAndView, WebRequest request, WebResponse response) throws Exception {
+        if (modelAndView == null || modelAndView.isEmpty() || response.isCommitted()) {
+            return;
+        }
+        if (!modelAndView.hasView()) {
+            return;
+        }
+        View view = resolveView(modelAndView.getViewName());
+        if (view == null) {
+            throw new MvcException("No ViewResolver for view name [" + modelAndView.getViewName() + "]");
+        }
+        view.render(modelAndView.getModel(), request, response);
+    }
+
+    private View resolveView(String viewName) throws Exception {
+        for (ViewResolver viewResolver : viewResolvers) {
+            if (viewResolver.supports(viewName)) {
+                return viewResolver.resolveViewName(viewName);
+            }
+        }
+        return null;
     }
 }

@@ -8,12 +8,12 @@ import com.xujn.minispringmvc.servlet.WebResponse;
 import com.xujn.minispringmvc.support.Ordered;
 
 /**
- * Writes String return values directly to the response body.
- * Constraint: Phase 1 has view resolution disabled, so String always means response body text.
+ * Converts String return values into logical view names when view resolution is enabled.
+ * Constraint: active only when the dispatcher sees at least one ViewResolver.
  * Thread-safety: stateless and thread-safe.
  */
 @Component
-public class StringReturnValueHandler implements HandlerMethodReturnValueHandler, Ordered {
+public class ViewNameReturnValueHandler implements HandlerMethodReturnValueHandler, Ordered {
 
     @Override
     public boolean supportsReturnType(MethodParameter returnType) {
@@ -23,10 +23,7 @@ public class StringReturnValueHandler implements HandlerMethodReturnValueHandler
     @Override
     public ModelAndView handleReturnValue(
             Object returnValue, MethodParameter returnType, WebRequest request, WebResponse response) {
-        if (!response.isCommitted()) {
-            response.write(returnValue == null ? "" : returnValue.toString());
-        }
-        return ModelAndView.empty();
+        return returnValue == null ? ModelAndView.empty() : new ModelAndView(returnValue.toString());
     }
 
     @Override
