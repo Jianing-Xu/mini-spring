@@ -53,6 +53,24 @@ class BeanFactoryUnitTest {
         assertTrue(exception.getMessage().contains("h2DataSource"));
     }
 
+    @Test
+    void factoryMethodShouldSupportExplicitLiteralArguments() {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        beanFactory.registerBeanDefinition("namedFactory",
+                new BeanDefinition(NamedFactory.class, "namedFactory"));
+
+        BeanDefinition beanDefinition = new BeanDefinition(NamedValue.class, "namedValue");
+        beanDefinition.setFactoryBeanName("namedFactory");
+        beanDefinition.setFactoryMethodName("create");
+        beanDefinition.setFactoryMethodParameterTypes(new Class<?>[]{String.class});
+        beanDefinition.setFactoryMethodArguments(new Object[]{"mapperBean"});
+        beanFactory.registerBeanDefinition("namedValue", beanDefinition);
+
+        NamedValue namedValue = beanFactory.getBean("namedValue", NamedValue.class);
+
+        assertEquals("mapperBean", namedValue.value());
+    }
+
     @Component
     static class UserRepository {
     }
@@ -71,5 +89,16 @@ class BeanFactoryUnitTest {
 
     @Component
     static class H2DataSource implements DataSource {
+    }
+
+    @Component
+    static class NamedFactory {
+
+        NamedValue create(String value) {
+            return new NamedValue(value);
+        }
+    }
+
+    record NamedValue(String value) {
     }
 }
