@@ -15,5 +15,5 @@ public interface MethodInvocation {
 
     Object getThis();
 
-    Object proceed();
+    Object proceed() throws Throwable;
 }

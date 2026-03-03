@@ -9,6 +9,7 @@ import com.xujn.minispring.context.annotation.ConfigurationClassPostProcessor;
 import com.xujn.minispring.core.AnnotationUtils;
 import com.xujn.minispring.beans.factory.support.DefaultListableBeanFactory;
 import com.xujn.minispring.exception.BeansException;
+import com.xujn.minispring.tx.support.TransactionAutoProxyCreator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,6 +131,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     private void registerBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
+        beanFactory.addBeanPostProcessor(new TransactionAutoProxyCreator(beanFactory));
         for (String beanName : beanFactory.getBeanNamesForType(BeanPostProcessor.class)) {
             BeanPostProcessor beanPostProcessor = beanFactory.getBean(beanName, BeanPostProcessor.class);
             beanFactory.addBeanPostProcessor(beanPostProcessor);

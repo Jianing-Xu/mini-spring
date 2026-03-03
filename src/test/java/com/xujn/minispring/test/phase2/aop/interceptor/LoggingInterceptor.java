@@ -16,7 +16,7 @@ public class LoggingInterceptor implements MethodInterceptor {
     }
 
     @Override
-    public Object invoke(MethodInvocation invocation) {
+    public Object invoke(MethodInvocation invocation) throws Throwable {
         intercepted = true;
         return invocation.proceed();
     }

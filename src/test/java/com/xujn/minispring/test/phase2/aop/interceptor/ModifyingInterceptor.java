@@ -6,7 +6,7 @@ import com.xujn.minispring.aop.MethodInvocation;
 public class ModifyingInterceptor implements MethodInterceptor {
 
     @Override
-    public Object invoke(MethodInvocation invocation) {
+    public Object invoke(MethodInvocation invocation) throws Throwable {
         Object result = invocation.proceed();
         return result + "_modified";
     }

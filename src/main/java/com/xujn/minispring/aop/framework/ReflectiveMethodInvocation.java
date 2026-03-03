@@ -2,8 +2,7 @@ package com.xujn.minispring.aop.framework;
 
 import com.xujn.minispring.aop.MethodInterceptor;
 import com.xujn.minispring.aop.MethodInvocation;
-import com.xujn.minispring.exception.BeansException;
-
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -44,13 +43,15 @@ public class ReflectiveMethodInvocation implements MethodInvocation {
     }
 
     @Override
-    public Object proceed() {
+    public Object proceed() throws Throwable {
         if (currentInterceptorIndex == interceptors.size() - 1) {
             try {
                 method.setAccessible(true);
                 return method.invoke(target, arguments);
+            } catch (InvocationTargetException ex) {
+                throw ex.getTargetException();
             } catch (ReflectiveOperationException ex) {
-                throw new BeansException("Failed to invoke method '" + method.getName() +
+                throw new RuntimeException("Failed to invoke method '" + method.getName() +
                         "' on target [" + target.getClass().getName() + "]", ex);
             }
         }

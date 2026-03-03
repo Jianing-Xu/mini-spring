@@ -30,13 +30,15 @@ public class JdkDynamicAopProxy implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         Object target = advisedSupport.getTargetSource().getTarget();
         if (method.getDeclaringClass() == Object.class
                 || !advisedSupport.getPointcut().getMethodMatcher().matches(method, target.getClass())) {
             try {
                 method.setAccessible(true);
                 return method.invoke(target, args);
+            } catch (java.lang.reflect.InvocationTargetException ex) {
+                throw new RuntimeException(ex.getTargetException());
             } catch (ReflectiveOperationException ex) {
                 throw new RuntimeException(ex);
             }

@@ -7,5 +7,5 @@ package com.xujn.minispring.aop;
  */
 public interface MethodInterceptor {
 
-    Object invoke(MethodInvocation invocation);
+    Object invoke(MethodInvocation invocation) throws Throwable;
 }

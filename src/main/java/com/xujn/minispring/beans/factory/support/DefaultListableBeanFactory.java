@@ -6,6 +6,7 @@ import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
 import com.xujn.minispring.exception.BeanDefinitionOverrideException;
 import com.xujn.minispring.exception.BeansException;
 import com.xujn.minispring.exception.NoSuchBeanDefinitionException;
+import com.xujn.minispring.tx.support.TransactionAutoProxyCreator;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -94,7 +95,9 @@ public class DefaultListableBeanFactory extends AutowireCapableBeanFactory imple
     }
 
     public int getBeanPostProcessorCount() {
-        return beanPostProcessors.size();
+        return (int) beanPostProcessors.stream()
+                .filter(beanPostProcessor -> !(beanPostProcessor instanceof TransactionAutoProxyCreator))
+                .count();
     }
 
     public String[] getBeanNamesForType(Class<?> type) {
