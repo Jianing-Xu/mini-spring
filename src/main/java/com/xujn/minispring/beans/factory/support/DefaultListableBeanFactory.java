@@ -2,6 +2,7 @@ package com.xujn.minispring.beans.factory.support;
 
 import com.xujn.minispring.beans.factory.config.BeanDefinition;
 import com.xujn.minispring.beans.factory.config.BeanDefinitionRegistry;
+import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
 import com.xujn.minispring.exception.BeansException;
 import com.xujn.minispring.exception.NoSuchBeanDefinitionException;
 
@@ -20,6 +21,7 @@ public class DefaultListableBeanFactory extends AutowireCapableBeanFactory imple
 
     private final Map<String, BeanDefinition> beanDefinitionMap = new LinkedHashMap<>();
     private final List<String> beanDefinitionNames = new ArrayList<>();
+    private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<>();
 
     @Override
     public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition) {
@@ -65,8 +67,33 @@ public class DefaultListableBeanFactory extends AutowireCapableBeanFactory imple
         }
     }
 
+    public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
+        beanPostProcessors.remove(beanPostProcessor);
+        beanPostProcessors.add(beanPostProcessor);
+    }
+
+    public int getBeanPostProcessorCount() {
+        return beanPostProcessors.size();
+    }
+
+    public String[] getBeanNamesForType(Class<?> type) {
+        List<String> beanNames = new ArrayList<>();
+        for (String beanName : beanDefinitionNames) {
+            BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+            if (beanDefinition != null && type.isAssignableFrom(beanDefinition.getBeanClass())) {
+                beanNames.add(beanName);
+            }
+        }
+        return beanNames.toArray(String[]::new);
+    }
+
     @Override
     protected String[] getBeanDefinitionNamesForLookup() {
         return getBeanDefinitionNames();
+    }
+
+    @Override
+    protected List<BeanPostProcessor> getBeanPostProcessors() {
+        return beanPostProcessors;
     }
 }

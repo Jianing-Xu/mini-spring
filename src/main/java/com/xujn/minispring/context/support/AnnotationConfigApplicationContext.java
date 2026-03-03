@@ -1,5 +1,6 @@
 package com.xujn.minispring.context.support;
 
+import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
 import com.xujn.minispring.beans.factory.config.BeanDefinition;
 import com.xujn.minispring.context.ApplicationContext;
 import com.xujn.minispring.context.annotation.ClassPathBeanDefinitionScanner;
@@ -13,7 +14,7 @@ import java.util.List;
 
 /**
  * ApplicationContext implementation bootstrapped from annotation scanning.
- * Constraint: Phase 1 supports a single refresh and delegates all bean work to DefaultListableBeanFactory.
+ * Constraint: Phase 2 supports a single refresh and registers BeanPostProcessor beans before other singletons.
  * Thread-safety: refresh is not concurrent-safe and is expected to run once during startup.
  */
 public class AnnotationConfigApplicationContext implements ApplicationContext {
@@ -52,13 +53,16 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         this.beanFactory = new DefaultListableBeanFactory();
         ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(beanFactory);
         scanner.scan(resolveScanPackages());
+        registerBeanPostProcessors(beanFactory);
         beanFactory.preInstantiateSingletons();
         this.refreshed = true;
     }
 
     @Override
     public void close() {
-        // Phase 1 intentionally has no destroy lifecycle.
+        if (beanFactory != null) {
+            beanFactory.destroySingletons();
+        }
     }
 
     @Override
@@ -95,6 +99,17 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
     public int getBeanDefinitionCount() {
         return beanFactory.getBeanDefinitionCount();
+    }
+
+    public DefaultListableBeanFactory getBeanFactory() {
+        return beanFactory;
+    }
+
+    private void registerBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
+        for (String beanName : beanFactory.getBeanNamesForType(BeanPostProcessor.class)) {
+            BeanPostProcessor beanPostProcessor = beanFactory.getBean(beanName, BeanPostProcessor.class);
+            beanFactory.addBeanPostProcessor(beanPostProcessor);
+        }
     }
 
     private String[] resolveScanPackages() {

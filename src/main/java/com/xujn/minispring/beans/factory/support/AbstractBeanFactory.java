@@ -15,7 +15,7 @@ import java.util.Objects;
 
 /**
  * Template bean factory that centralizes lookup, singleton caching, and circular dependency detection.
- * Constraint: Phase 1 supports singleton-only creation and fails fast on circular dependencies.
+ * Constraint: Phase 2 supports singleton and prototype creation, and still fails fast on circular dependencies.
  * Thread-safety: singleton caches are concurrent, while creation path tracking is isolated per thread.
  */
 public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
@@ -36,9 +36,9 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         if (beanDefinition == null) {
             throw new NoSuchBeanDefinitionException(name);
         }
-        if (!beanDefinition.isSingleton()) {
+        if (!beanDefinition.isSingleton() && !beanDefinition.isPrototype()) {
             throw new BeansException("Bean '" + name + "' declares unsupported scope '" +
-                    beanDefinition.getScope() + "' in Phase 1");
+                    beanDefinition.getScope() + "'");
         }
         if (isSingletonCurrentlyInCreation(name)) {
             throw new BeanCurrentlyInCreationException(name, buildDependencyChain(name));
@@ -49,7 +49,9 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         creationPath.addLast(name);
         try {
             Object bean = createBean(name, beanDefinition);
-            registerSingleton(name, bean);
+            if (beanDefinition.isSingleton()) {
+                registerSingleton(name, bean);
+            }
             return bean;
         } finally {
             // Cleanup must run even on failure; otherwise later lookups would see a fake cycle.

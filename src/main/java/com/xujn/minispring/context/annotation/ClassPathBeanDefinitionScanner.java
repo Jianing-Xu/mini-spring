@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 /**
@@ -64,6 +65,7 @@ public class ClassPathBeanDefinitionScanner {
         if (files == null) {
             return;
         }
+        Arrays.sort(files, java.util.Comparator.comparing(File::getName));
         for (File file : files) {
             if (file.isDirectory()) {
                 scanDirectory(currentPackage + "." + file.getName(), file);
