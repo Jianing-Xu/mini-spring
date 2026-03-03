@@ -27,8 +27,12 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
     public Object getBean(String name) {
         Objects.requireNonNull(name, "beanName must not be null");
 
-        Object singleton = getSingleton(name);
+        Object singleton = getSingleton(name, true);
         if (singleton != null) {
+            if (!containsSingleton(name) && hasPrototypeInCreationPath()) {
+                throw new BeanCurrentlyInCreationException(name, buildDependencyChain(name),
+                        "prototype circular dependency is not supported");
+            }
             return singleton;
         }
 
@@ -41,6 +45,14 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
                     beanDefinition.getScope() + "'");
         }
         if (isSingletonCurrentlyInCreation(name)) {
+            if (beanDefinition.isPrototype()) {
+                throw new BeanCurrentlyInCreationException(name, buildDependencyChain(name),
+                        "prototype circular dependency is not supported");
+            }
+            if (isConstructorResolutionInProgress()) {
+                throw new BeanCurrentlyInCreationException(name, buildDependencyChain(name),
+                        "constructor injection circular dependency is not supported");
+            }
             throw new BeanCurrentlyInCreationException(name, buildDependencyChain(name));
         }
 
@@ -117,6 +129,19 @@ public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry i
         }
         cycle.add(beanName);
         return String.join(" -> ", cycle);
+    }
+
+    private boolean hasPrototypeInCreationPath() {
+        for (String beanName : currentCreationPath.get()) {
+            if (getBeanDefinition(beanName).isPrototype()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isConstructorResolutionInProgress() {
+        return false;
     }
 
     protected abstract Object createBean(String beanName, BeanDefinition beanDefinition);
