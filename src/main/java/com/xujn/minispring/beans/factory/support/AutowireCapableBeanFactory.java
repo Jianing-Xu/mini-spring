@@ -7,9 +7,12 @@ import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
 import com.xujn.minispring.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import com.xujn.minispring.context.annotation.Autowired;
 import com.xujn.minispring.core.ReflectionUtils;
+import com.xujn.minispring.exception.BeansException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -42,6 +45,9 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
     }
 
     protected Object createBeanInstance(String beanName, BeanDefinition beanDefinition) {
+        if (beanDefinition.isFactoryMethod()) {
+            return createBeanByFactoryMethod(beanName, beanDefinition);
+        }
         Constructor<?>[] constructors = beanDefinition.getBeanClass().getDeclaredConstructors();
         Constructor<?> noArgs = Arrays.stream(constructors)
                 .filter(constructor -> constructor.getParameterCount() == 0)
@@ -70,6 +76,41 @@ public abstract class AutowireCapableBeanFactory extends AbstractBeanFactory {
             if (path.isEmpty()) {
                 constructorResolutionPath.remove();
             }
+        }
+    }
+
+    private Object createBeanByFactoryMethod(String beanName, BeanDefinition beanDefinition) {
+        Object factoryBean = getBean(beanDefinition.getFactoryBeanName());
+        Method factoryMethod;
+        try {
+            factoryMethod = factoryBean.getClass().getDeclaredMethod(beanDefinition.getFactoryMethodName());
+        } catch (NoSuchMethodException ex) {
+            throw new BeansException("Failed to locate @Bean factory method '" +
+                    beanDefinition.getFactoryMethodName() + "' on bean '" +
+                    beanDefinition.getFactoryBeanName() + "' for bean '" + beanName + "'", ex);
+        }
+        if (factoryMethod.getParameterCount() > 0) {
+            throw new BeansException("@Bean factory method '" + beanDefinition.getFactoryMethodName() +
+                    "' on bean '" + beanDefinition.getFactoryBeanName() +
+                    "' declares parameters, but JavaConfig Phase 1 supports only no-arg factory methods");
+        }
+        try {
+            factoryMethod.setAccessible(true);
+            Object instance = factoryMethod.invoke(factoryBean);
+            if (instance == null) {
+                throw new BeansException("@Bean method returned null: beanName='" + beanName +
+                        "', factoryBeanName='" + beanDefinition.getFactoryBeanName() +
+                        "', factoryMethodName='" + beanDefinition.getFactoryMethodName() + "'");
+            }
+            return instance;
+        } catch (IllegalAccessException ex) {
+            throw new BeansException("Failed to access @Bean factory method '" +
+                    beanDefinition.getFactoryMethodName() + "' for bean '" + beanName + "'", ex);
+        } catch (InvocationTargetException ex) {
+            Throwable targetException = ex.getTargetException();
+            throw new BeansException("Failed to invoke @Bean factory method '" +
+                    beanDefinition.getFactoryMethodName() + "' for bean '" + beanName +
+                    "': " + targetException.getMessage(), targetException);
         }
     }
 

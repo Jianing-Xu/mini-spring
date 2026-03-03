@@ -1,9 +1,11 @@
 package com.xujn.minispring.context.support;
 
 import com.xujn.minispring.beans.factory.config.BeanPostProcessor;
+import com.xujn.minispring.beans.factory.config.BeanFactoryPostProcessor;
 import com.xujn.minispring.beans.factory.config.BeanDefinition;
 import com.xujn.minispring.context.ApplicationContext;
 import com.xujn.minispring.context.annotation.ClassPathBeanDefinitionScanner;
+import com.xujn.minispring.context.annotation.ConfigurationClassPostProcessor;
 import com.xujn.minispring.core.AnnotationUtils;
 import com.xujn.minispring.beans.factory.support.DefaultListableBeanFactory;
 import com.xujn.minispring.exception.BeansException;
@@ -53,6 +55,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         this.beanFactory = new DefaultListableBeanFactory();
         ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(beanFactory);
         scanner.scan(resolveScanPackages());
+        invokeBeanFactoryPostProcessors(beanFactory);
         registerBeanPostProcessors(beanFactory);
         beanFactory.preInstantiateSingletons();
         this.refreshed = true;
@@ -103,6 +106,11 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
     public DefaultListableBeanFactory getBeanFactory() {
         return beanFactory;
+    }
+
+    private void invokeBeanFactoryPostProcessors(DefaultListableBeanFactory beanFactory) {
+        BeanFactoryPostProcessor configurationClassPostProcessor = new ConfigurationClassPostProcessor();
+        configurationClassPostProcessor.postProcessBeanFactory(beanFactory);
     }
 
     private void registerBeanPostProcessors(DefaultListableBeanFactory beanFactory) {
