@@ -10,6 +10,8 @@ import com.xujn.minispringmvc.exception.HandlerAdapterConflictException;
 import com.xujn.minispringmvc.exception.MvcException;
 import com.xujn.minispringmvc.exception.NoHandlerAdapterException;
 import com.xujn.minispringmvc.exception.NoHandlerFoundException;
+import com.xujn.minispringmvc.exception.UnsupportedHandlerMethodParameterException;
+import com.xujn.minispringmvc.exception.UnsupportedHandlerMethodReturnValueException;
 import com.xujn.minispringmvc.mapping.HandlerMapping;
 import com.xujn.minispringmvc.mapping.RequestMappingHandlerMapping;
 
@@ -52,6 +54,11 @@ public class DispatcherServlet {
                 requestMappingHandlerMapping.initialize(mvcApplicationContext);
             }
         }
+        for (HandlerAdapter handlerAdapter : handlerAdapters) {
+            if (handlerAdapter instanceof com.xujn.minispringmvc.adapter.RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
+                requestMappingHandlerAdapter.initialize(mvcApplicationContext);
+            }
+        }
         this.initialized = true;
     }
 
@@ -66,7 +73,10 @@ public class DispatcherServlet {
             handler = executionChain.getHandler();
             HandlerAdapter handlerAdapter = getHandlerAdapter(handler);
             handlerAdapter.handle(request, response, handler);
-        } catch (NoHandlerAdapterException | HandlerAdapterConflictException ex) {
+        } catch (NoHandlerAdapterException
+                 | HandlerAdapterConflictException
+                 | UnsupportedHandlerMethodParameterException
+                 | UnsupportedHandlerMethodReturnValueException ex) {
             throw ex;
         } catch (Exception ex) {
             processDispatchException(request, response, handler, ex);

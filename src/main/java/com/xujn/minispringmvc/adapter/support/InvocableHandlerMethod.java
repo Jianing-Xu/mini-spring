@@ -19,13 +19,13 @@ import java.util.List;
 public class InvocableHandlerMethod {
 
     private final HandlerMethod handlerMethod;
-    private final List<HandlerMethodArgumentResolver> argumentResolvers;
-    private final List<HandlerMethodReturnValueHandler> returnValueHandlers;
+    private final HandlerMethodArgumentResolverComposite argumentResolvers;
+    private final HandlerMethodReturnValueHandlerComposite returnValueHandlers;
 
     public InvocableHandlerMethod(
             HandlerMethod handlerMethod,
-            List<HandlerMethodArgumentResolver> argumentResolvers,
-            List<HandlerMethodReturnValueHandler> returnValueHandlers) {
+            HandlerMethodArgumentResolverComposite argumentResolvers,
+            HandlerMethodReturnValueHandlerComposite returnValueHandlers) {
         this.handlerMethod = handlerMethod;
         this.argumentResolvers = argumentResolvers;
         this.returnValueHandlers = returnValueHandlers;
@@ -60,25 +60,10 @@ public class InvocableHandlerMethod {
     }
 
     private Object resolveArgument(MethodParameter parameter, WebRequest request, WebResponse response) throws Exception {
-        for (HandlerMethodArgumentResolver resolver : argumentResolvers) {
-            if (resolver.supportsParameter(parameter)) {
-                return resolver.resolveArgument(parameter, request, response);
-            }
-        }
-        throw new MvcException("No argument resolver for handler [" + handlerMethod.getShortLogMessage() +
-                "], parameter index [" + parameter.getParameterIndex() + "], type [" +
-                parameter.getParameterType().getName() + "]");
+        return argumentResolvers.resolveArgument(parameter, request, response);
     }
 
     private void handleReturnValue(Object returnValue, WebRequest request, WebResponse response) throws Exception {
-        MethodParameter returnType = handlerMethod.getReturnType();
-        for (HandlerMethodReturnValueHandler handler : returnValueHandlers) {
-            if (handler.supportsReturnType(returnType)) {
-                handler.handleReturnValue(returnValue, returnType, request, response);
-                return;
-            }
-        }
-        throw new MvcException("No return value handler for handler [" + handlerMethod.getShortLogMessage() +
-                "], return type [" + returnType.getParameterType().getName() + "]");
+        returnValueHandlers.handleReturnValue(returnValue, handlerMethod.getReturnType(), request, response);
     }
 }

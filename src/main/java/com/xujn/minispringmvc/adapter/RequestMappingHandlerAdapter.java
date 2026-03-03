@@ -1,36 +1,47 @@
 package com.xujn.minispringmvc.adapter;
 
 import com.xujn.minispring.context.annotation.Component;
+import com.xujn.minispringmvc.context.MvcApplicationContext;
 import com.xujn.minispringmvc.adapter.support.InvocableHandlerMethod;
-import com.xujn.minispringmvc.adapter.support.RequestParamArgumentResolver;
-import com.xujn.minispringmvc.adapter.support.StringReturnValueHandler;
-import com.xujn.minispringmvc.adapter.support.VoidReturnValueHandler;
-import com.xujn.minispringmvc.adapter.support.WebRequestArgumentResolver;
-import com.xujn.minispringmvc.adapter.support.WebResponseArgumentResolver;
+import com.xujn.minispringmvc.adapter.support.HandlerMethodArgumentResolverComposite;
+import com.xujn.minispringmvc.adapter.support.HandlerMethodReturnValueHandlerComposite;
 import com.xujn.minispringmvc.mapping.HandlerMethod;
 import com.xujn.minispringmvc.servlet.WebRequest;
 import com.xujn.minispringmvc.servlet.WebResponse;
 import com.xujn.minispringmvc.support.Ordered;
-
-import java.util.List;
+import com.xujn.minispringmvc.context.support.DefaultMvcInfrastructureInitializer;
 
 /**
  * Default adapter that executes HandlerMethod instances.
- * Constraint: Phase 1 hardcodes simple argument resolvers and String/void return value handlers.
+ * Constraint: Phase 2 initializes ordered argument resolvers and return value handlers from the container.
  * Thread-safety: initialized once and then read-only.
  */
 @Component
 public class RequestMappingHandlerAdapter implements HandlerAdapter, Ordered {
 
-    private final List<HandlerMethodArgumentResolver> argumentResolvers = List.of(
-            new WebRequestArgumentResolver(),
-            new WebResponseArgumentResolver(),
-            new RequestParamArgumentResolver()
-    );
-    private final List<HandlerMethodReturnValueHandler> returnValueHandlers = List.of(
-            new VoidReturnValueHandler(),
-            new StringReturnValueHandler()
-    );
+    private final DefaultMvcInfrastructureInitializer infrastructureInitializer = new DefaultMvcInfrastructureInitializer();
+    private final HandlerMethodArgumentResolverComposite argumentResolvers = new HandlerMethodArgumentResolverComposite();
+    private final HandlerMethodReturnValueHandlerComposite returnValueHandlers = new HandlerMethodReturnValueHandlerComposite();
+    private boolean initialized;
+
+    public void initialize(MvcApplicationContext context) {
+        if (initialized) {
+            return;
+        }
+        argumentResolvers.addResolvers(
+                infrastructureInitializer.initializeBeans(context, HandlerMethodArgumentResolver.class));
+        returnValueHandlers.addHandlers(
+                infrastructureInitializer.initializeBeans(context, HandlerMethodReturnValueHandler.class));
+        initialized = true;
+    }
+
+    public HandlerMethodArgumentResolverComposite getArgumentResolvers() {
+        return argumentResolvers;
+    }
+
+    public HandlerMethodReturnValueHandlerComposite getReturnValueHandlers() {
+        return returnValueHandlers;
+    }
 
     @Override
     public boolean supports(Object handler) {
@@ -40,6 +51,9 @@ public class RequestMappingHandlerAdapter implements HandlerAdapter, Ordered {
     @Override
     public void handle(WebRequest request, WebResponse response, Object handler) throws Exception {
         HandlerMethod handlerMethod = (HandlerMethod) handler;
+        if (!initialized) {
+            throw new IllegalStateException("RequestMappingHandlerAdapter has not been initialized");
+        }
         new InvocableHandlerMethod(handlerMethod, argumentResolvers, returnValueHandlers).invokeForRequest(request, response);
     }
 

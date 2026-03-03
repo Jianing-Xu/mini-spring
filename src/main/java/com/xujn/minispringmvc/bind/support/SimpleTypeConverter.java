@@ -1,12 +1,17 @@
-package com.xujn.minispringmvc.adapter.support;
+package com.xujn.minispringmvc.bind.support;
+
+import com.xujn.minispring.context.annotation.Component;
+import com.xujn.minispringmvc.bind.TypeConverter;
 
 /**
- * Minimal string-based converter for Phase 1 request parameter binding.
- * Constraint: only String, int/Integer, long/Long, and boolean/Boolean are supported.
+ * Minimal scalar converter for request parameter binding.
+ * Constraint: supports String, int/Integer, long/Long, and boolean/Boolean only.
  * Thread-safety: stateless and thread-safe.
  */
-public class SimpleTypeConverter {
+@Component
+public class SimpleTypeConverter implements TypeConverter {
 
+    @Override
     public boolean supports(Class<?> targetType) {
         return targetType == String.class
                 || targetType == int.class
@@ -17,6 +22,7 @@ public class SimpleTypeConverter {
                 || targetType == Boolean.class;
     }
 
+    @Override
     public Object convert(String rawValue, Class<?> targetType) {
         if (targetType == String.class) {
             return rawValue;
