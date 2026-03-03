@@ -1,4 +1,4 @@
-package com.xujn.minispringmvc.test.phase1.simple;
+package com.xujn.minispringmvc.test.phase2.defaultcase;
 
 import com.xujn.minispring.context.annotation.ComponentScan;
 
@@ -7,7 +7,7 @@ import com.xujn.minispring.context.annotation.ComponentScan;
         "com.xujn.minispringmvc.adapter",
         "com.xujn.minispringmvc.bind",
         "com.xujn.minispringmvc.exception",
-        "com.xujn.minispringmvc.test.phase1.simple"
+        "com.xujn.minispringmvc.test.phase2.defaultcase"
 })
-public class SimpleMvcConfig {
+public class DefaultPhase2MvcConfig {
 }
